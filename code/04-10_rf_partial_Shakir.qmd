@@ -27,8 +27,15 @@ As we previously learned, linear regression models can suffer from **multicollin
 The methods we mentioned to overcome multicollinearity include:  
   - Dimensionality reduction (e.g., PCA)  
   - Variable selection:
-    - by hand
-    - by models  
+    - by hand (using expert knowledge to determine what predictors should be included in the model)
+    - by models (e.g., random forest, CIT, elastic net) 
+    
+[Note: Some Machine Learning models (not all of them) handle multicollinearity well. 
+
+- Elastic net handles multicollinearity by finding variables that are correlated and basically forces one of these variables to have 0 slopeon the model by managing both L1 and L2 penalties. 
+- Conditional inference tree handles multicollinearity -- It never truly evaluates all variables together -- it evaluates predictor variables one-by-one at each one of the splits 
+
+]
 
 Today, we'll explore another model that addresses multicolinearity: **random forest**.  
 
