@@ -152,9 +152,12 @@ But now once it makes a break, it splits again -- now those two splits, each one
 ]
 
 ![](https://bradleyboehmke.github.io/HOML/09-random-forest_files/figure-html/tuning-mtry-1.png)
-Up to this point, we're talking about mtry (= the number of features each split in each tree is allowed to see). mtry does NOT determine how many breaks the tree can have. The hyperparameter that controls how deep a tree is going to be is the "node size".
+
 
 ## Node size  
+
+[Up to this point, we're talking about mtry (= the number of features each split in each tree is allowed to see). mtry does NOT determine how many breaks the tree can have. The hyperparameter that controls how deep a tree is going to be is the "node size".]
+
 Node size refers to the minimum number of observations in a node (of a given tree) for it to be split.  
 
 Larger values of node size grow simpler individual trees, while smaller values of node size grow longer more complex trees.  
