@@ -32,10 +32,11 @@ The methods we mentioned to overcome multicollinearity include:
     
 [Note: Some Machine Learning models (not all of them) handle multicollinearity well. 
 
-- Elastic net handles multicollinearity by finding variables that are correlated and basically forces one of these variables to have 0 slopeon the model by managing both L1 and L2 penalties. 
-- Conditional inference tree handles multicollinearity -- It never truly evaluates all variables together -- it evaluates predictor variables one-by-one at each one of the splits 
+- Elastic net handles multicollinearity by finding variables that are correlated and basically forces one of these variables to have 0 slopeon the model by managing both L1 and L2 penalties.  
 
-]
+- Conditional inference tree handles multicollinearity -- It never truly evaluates all variables together -- it evaluates predictor variables one-by-one at each one of the splits. So, it's always doing like a strength by one weather variable in our case and then strength by another one, and strength by another one, and then getting the p value of each one of them choosing the lowest p value to keep moving forward. So, although it is a multivariate analysis, but it never really sees all variables together when it's doing the linear regression part of the model. That's how it handles multicollinearity -- by avoiding having multicollinear variables in a given modeling step. 
+
+- Random forest also handles multicollinearity, but in a different way. ]
 
 Today, we'll explore another model that addresses multicolinearity: **random forest**.  
 
@@ -44,7 +45,19 @@ Random forest is a very [robust] popular  **supervised** “out-of-the-box” or
 
 The power of random forests come from **two random processes**:  
   - Bootstrap aggregating (bagging) on rows  
-  - Random selection of a subset of variables (columns) at each split.  
+  - Random selection of a subset of variables (columns) at each split. [Random selection of a subset of predictor variables/columns at each split]  
+  
+[ Very important note: 
+
+*Why is random forest is such a powerful/robust machine learning algorithm?*
+
+The power of random forests come from these two random processes working together:
+
+- Random selection of rows with bootstrap aggregating (bagging) 
+- Random selection of columns at each split of the tree
+
+So, in the end when you ask for a prediction from this forest, each tree is giving a prediction. And maybe if you were to look at just one of those trees, it would be a horrible prediction. But because you have so many trees, and they were all trained on a different version of our data, they make a really good prediction on average. That's the power of random forest and that's how it works so well. 
+]
   
 ## Bootstrap aggregating (bagging)  
 Bagging trees introduces a random component into the tree building process by building **many trees on bootstrapped copies of the training data**.   
@@ -54,22 +67,43 @@ Bagging then aggregates the predictions across all the trees; this aggregation r
 ## Random subset of features  
 While growing a decision tree during the bagging process, random forests perform split-variable randomization where each time a split is to be performed, the search for the split variable is limited to a random subset of **mtry** of the original **p** features. 
 
-Typical default values for mtry are **p/3** for regression (our case) and $\sqrt p$ for classification.  
+
+
+Typical default values for mtry are **p/3** for regression (our case; when y/predicted variable is numerical) and $\sqrt p$ for classification (when y/predicted variable is categorical).  
+
+[mtry  = number of features that we allow for each split and each tree to see. 
+We have 73 number of features. So, p = 73. 
+So, the default mtry value will be = 73/3 = 24.3333. So, 24.3333 would be the number of columns that we randomly selected at each split of each tree.
+So, each split would see a random subset of 24 columns only (by default). If we just run the random forest and not train it, this would be the default random subset (of 24 columns) that it would use in our case. But this value is trainable, we can further improve our model by finding the best value of mtry. 
+]
 
 Since the algorithm **randomly selects** a **bootstrap sample** to train on and a **random sample of features to use at each split**, a more diverse set of trees is produced which tends to lessen tree correlation beyond bagged trees and often dramatically increase predictive power.  
-
 
 So, how can we control the simplicity/complexity of the tree?  
 
 **Training a model by fine-tuning its hyper-parameters**.
 
 There will be 3 main hyperparameters that we can fine-tune:  
-  - **number of trees in the forest**: as the name says, how many individual trees will be trained  
-  - **number of features randomly selected at each split (mtry)**: as the name says  
+  - **number of trees in the forest**: as the name says, how many individual trees will be trained  [how many individual trees that we would allow that forest to grow]
+  - **number of features randomly selected at each split [of each tree] (mtry)**: as the name says  
   - **minimum node size**:  minimum number of observations in a node [of a given tree] for it to be split.  
   
 ## Number of trees  
-The number of trees needs to be sufficiently large to stabilize the error rate. A good rule of thumb is to start with 10 times the number of features [features = variables/ columns].   [OOB Error = Out-of-bag error]
+The number of trees needs to be sufficiently large to stabilize the error rate. 
+A good rule of thumb is to start with 10 times the number of features [features = variables/ columns].   
+
+[Normally what we want is a forest that has enough trees that stabilize the Out-of-bag (OOB) error.
+
+OOB Error = Out-of-bag error
+
+Each tree is using a bootstrap sample of the training set. So, if your training set has 10 rows, the bootstrap sample has 10 rows. But the bootstrap sample may have some samples that are duplicated, and some that are completely missing. The ones that are missing are the Out-of-bag samples. So, it trains on your bootstrap sample, but it knows which ones are not present on the bootstrap set. Then it makes a prediction on those. That's what the Out-of-bag (OOB) sample or Out-of-bag (OOB) error is.
+
+In the plot, We want a forest that has enough trees to stabilize the error. A good rule of thumb is to start with 10 times the number of features [features = variables/ columns]. In our case, we have 72 features, so we will start with 72 x 10 = 720 trees in our forest.
+
+In this example here (the plot shown below), which does not come from our data, you see that your error on the y-axis decreases as you increase number of trees on the x-axis. But if it reaches a plateau after 500 trees. This model here evaluated up to about 1000 trees, but maybe it was already good enough at 500 trees. But how do you know that? how do you know what's the best level? by fine-tuning. The number of trees is one of the hyperparameters that we're going to fine-tune. So, in general more trees are not going to hurt your model performance. But if you have an excessive number of trees in a very complex model, why would you use 1000 tree if you only need 500 trees? Having an optimized/fine tuned number of trees is especially important because having more-than-necessary number of trees will hurt your computational time although the model performance will not be hurt. Again, although number of trees does not does not hurt your model predictive ability, but it does hurt your computational demand to train the model. That's why we need to fine-tune/optimize the number of trees.
+]
+
+
 
 ![](https://bradleyboehmke.github.io/HOML/09-random-forest_files/figure-html/tuning-trees-1.png)
      
@@ -77,13 +111,48 @@ More trees provide more robust and stable error estimates and variable importanc
      
      
 ## mtry  
-mtry helps to balance low tree correlation with reasonable predictive strength.  
+
+[mtry = the number of features each split in each tree is allowed to see ]
+
+**mtry helps to balance low tree correlation with reasonable predictive strength.** 
 
 When there are **fewer relevant predictors** (e.g., noisy data) a **higher value of mtry** tends to perform better because it makes it more likely to select those features with the strongest signal.   
 
 When there are many relevant predictors, a lower mtry might perform better.
 
+[
+ mtry makes sure that each split of each tree is seeing a different subset of variables, and therefore creating variability in the trees you're creating. if you were to give always the same exact set of rows and columns to all 1000 trees, you would probably have a thousand trees that are very similar because they're all being trained on the same data, they all are seeing the same data. 
+
+Random forest is giving a a different subset of rows to the tree, and within that tree a different subset of columns that it splits, making that tree be very different from its neighboring tree or any other tree in that forest. 
+
+So, why do we have to fine-tune mtry? When we have fewer relevant predictors, then a higher value of mry works better. Why is that? imagine that in our 72 predictors, if we only had three that were really strongly correlated with strength and everything else is not; if you have a high value of mtry of let's say 50, it means that each split is going to see a random selection of 50 columns. the chance of you having one of your three highly important variables in a subset of 50 is high. so at least you're having that very important variable appearing most of the times in most splits of most trees.
+
+So, if you have a large number of of variables, but only a very small subset of them are really important for you, but you don't know yet, then  mtry should be big, because the chance of having those fewer set of highly important variables appearing for each split is going to be higher, making sure your trees are trained well.
+
+Now, on the other hand, if you have many variables that are highly important in explaining your predicted variable, then you want a lower mtry value, because you don't want the the trees to see all of those very important variables all the time. You want you want to give different sets of important variables to different splits, so that they can create variability in the training process. 
+
+Let's visualize that effect in the plot shown below.
+
+Here, we have number of trees on the x- axis and OOB (out of bag) error as RMSE on the y- axis, and each line here is a value of mtry. As you see here, if we give an mtry of 2 (meaning that each split of each tree is only seeing 2 predictor variables. We do see that overall pattern of increasing trees are decreasing error. But if you have very few number of variables being evaluated at each splits (in this case 2), even though the OOB error stabilizes, but it remains pretty high.
+
+Now, if you see other other lines here (that kind of all almost converge on the bottom) -- THE line that has the lowest error is where mry was 21. And then there is one line for which mtry is 80, which is not the best.
+
+As you can see, there is a sweet spots of mtry. It is not that: "always high is going to be better", or "always low is going to be better". It's going to depend on the data, and it's probably going to fluctuate as well. 
+
+In this case, mry of 21 (meaning that for each tree on each split it was evaluating 21 random features of your data) was the best for this data set.
+]
+
+[*Very specific example of how random forest works:*
+
+The first random process (which is a bootstrap of the rows) is applied once for that tree. It's going to be different for the next tree, and then the next tree, and so on. But within a tree, the the subset of random rows is the same. Let's say your training set has 10 rows, you do a bootstrap sample of that. So, the bootstrap sample is also going to have 10 rows. But it could be that some are replicated and some are missing from the bootstrap sample -- that's what goes into that first tree. Now this first tree still has 72 columns. mtry is the value that's going to determine on each split how many and which one of those 72 columns are evaluated.
+
+So, let's say that at the first split, for a given model mtry is fixed (mtry is going to be let's say 3) meaning that if mtry is 3 for that first tree of the first split, it's going to see 10 rows but only 3 columns of the 73 total and that is a random selection of which 3 columns it sees. So, it only evaluates those 3 columns to decide which one of the 3 are the best one, and then use that to make a split. And that process of selecting the best one and making a split is very similar to the conditional inference tree.
+
+But now once it makes a break, it splits again -- now those two splits, each one of them individually are also going to see another random subset of the columns. So, now maybe the the columns that we're seeing on the first split, will most likely not be the same as the columns seen on the other two splits. And if it keeps breaking down making a very complex tree, each split is going to see just a subset of the columns. 
+]
+
 ![](https://bradleyboehmke.github.io/HOML/09-random-forest_files/figure-html/tuning-mtry-1.png)
+Up to this point, we're talking about mtry (= the number of features each split in each tree is allowed to see). mtry does NOT determine how many breaks the tree can have. The hyperparameter that controls how deep a tree is going to be is the "node size".
 
 ## Node size  
 Node size refers to the minimum number of observations in a node (of a given tree) for it to be split.  
