@@ -487,19 +487,24 @@ What tree_depth and min criterion values created highest R2?
 
 tree_depth = ~110; mtry = ~ 22 [this was the best result for 10 iterations]
 
-> Previously, we selected the single best model. Now, let's select the best model within one std error of the metric, so we choose a model among the top ones that is more parsimonious.  
+> Previously, we selected the single best model. Now, let's select the best model within one percent loss of the metric, so we choose a model among the top ones that is more parsimonious.  
 
 ```{r}
 # Based on lowest RMSE
 best_rmse <- rf_grid_result %>%
   select_by_pct_loss("trees",
                      metric = "rmse",
-                     limit = 2
+                     limit = 2 #"limit = 2": this is how many percent losses you are excepting in this case
                      )
 
 best_rmse
 
 ```
+
+Ask Dr. Bastos: 
+
+In the class, it was mentioned that "limit = 2": this is how many percent losses you are excepting in this case. Why are we using "limit = 2" instead of "limit = 1", because wouldn't that be accepting 2% losses? What is the best practice when it comes to "percent loss of the metric": using 1%, or 2%?
+
 
 ```{r}
 # Based on greatest R2
@@ -513,6 +518,18 @@ best_r2 <- rf_grid_result %>%
 best_r2
 
 ```
+
+I got the he following results that were different than Dr. Bastos's results (because of the randomness of 2 hyperparameters going on at each tree for a lot of models):
+Based on RMSE, we would choose   
+  - mtry = 25 
+  - trees = 443
+
+Based on R2, we would choose   
+  - mtry = 22
+  - trees = 113
+
+
+However, Dr. Bastos got the following results:
 Based on RMSE, we would choose   
   - mtry = 24 
   - trees = 518
@@ -539,12 +556,12 @@ final_spec
 
 ## 3. Validation  
 
-## Will come in exam: What does last fit mean?
-
 Now that we determined our best model, let's do our **last fit**.
 
+### What does last fit mean? (Will come in exam)
+
 This means 2 things:  
-  - Traninig the optimum hyperparameter values on the **entire training set**  
+  - Training the optimum hyperparameter values on the **entire training set**  
   - Using it to **predict** on the **test set**  
 
 These 2 steps can be completed in one function, as below:  
@@ -563,6 +580,12 @@ Metrics on the **test set**:
 final_fit %>%
   collect_metrics()
 ```
+
+From the output,
+Fit metrics on the test set:
+rmse = 2.9317445	
+rsq	= 0.1882245	
+
 
 Metrics on **train set** (for curiosity and compare to test set):  
 ```{r}
@@ -589,7 +612,23 @@ final_spec %>%
   )
 
 ```
+
+From the output,
+Fit metrics on the train set:
+rmse = 1.1385078	
+rsq	= 0.9470296	
+
 How does metrics on test compare to metrics on train?  
+
+Fit metrics on the test set:
+rmse = 2.9317445	
+rsq	= 0.1882245	
+
+Fit metrics on the train set:
+rmse = 1.1385078	
+rsq	= 0.9470296	
+
+We see that the R2 is really r-e-a-l-l-y high in the train set (rsq	= 0.9470296), as compared to the R2 of the test set 0.1882245. The RMSE is lower in the train set (rmse = 1.1385078) as compared to the RMSE of the test set (rmse = 2.9317445). [This is the reason why it's okay to report the fit metrics of the train set to understand how well our model is explaining our data, but it is not a good measure of the predictive ability of the model. To understand the predictive ability of the model, we have to look at the fit metrics of the test set. Notice that the R2 of the test set was 0.1882245, whereas the R2 of the train set was 0.9470296 -- which is a very large difference. Hence, we need to always report the fit metrics of the test set along with the fit metrics of the train set. ]
 
 Predicted vs. observed plot:  
 ```{r}
@@ -604,17 +643,21 @@ final_fit %>%
   scale_y_continuous(limits = c(20, 40)) 
 ```
 
+[**Very important note:**
+To interpret random forest model, we should always expcet to see (1) *perdicted vs. observed plot* and (3) *variable importance plot*, at the least -- these are the 2 things that must be mentioned in a random forest model. 
+]
+
 Variable importance: 
 
 [For Random Forest,] The importance metric we are evaluating here is **permutation**. 
 
-In the permutation-based approach, for each tree, the out- of-bag sample is passed down the tree and the prediction accuracy is recorded.   
+In the permutation-based approach, for each tree, the out-of-bag sample is passed down the tree and the prediction accuracy is recorded.   
 
 Then the values for each variable (one at a time) are randomly permuted and the accuracy is again computed.   
 
 The decrease in accuracy as a result of this randomly shuffling of feature values is averaged over all the trees for each predictor.   
 
-The variables with the **largest average decrease in accuracy** are considered **most important**.  
+The variables with the **largest average decrease in accuracy** [after being permuted] are [the ones that are] considered **most important**.  
 
 ```{r}
 
@@ -634,7 +677,11 @@ final_spec %>%
     
 ```
 
-**Therefore, solar radiation in July and August, and minimum temperature in June were the most important variables affecting cotton fiber strength.**  
+**Therefore, solar radiation in July, the minimum temperature in June  [Dr. Bastos found solar radiation in August to be the 2nd most important variable], and solar radiation in "August" [Dr. Bastos found minimum temperature in June to be the 3rd most important variable] were the most important variables affecting cotton fiber strength.**  
+
+[**Very important note:**
+To interpret random forest model, we should always expcet to see (1) *perdicted vs. observed plot* and (3) *variable importance plot*, at the least -- these are the 2 things that must be mentioned in a random forest model. 
+]
 
 # Summary  
 In this exercise, we covered: 
@@ -642,7 +689,7 @@ In this exercise, we covered:
   - Set up a ML workflow to train an rf model  
   - Used `recipes` to process data
   - Used `rsamples` to split data  
-  - Used **iterative search** to find the best values for max_depth and min_criterion    
+  - Used **iterative search** to find the best values for max_depth and mtry   
   - Used 5-fold cross validation as the resampling method  
   - Used both R2 and RMSE as the metrics to select best model  (within one percent loss)
   - Once final model was determined, used it to predict **test set**  
