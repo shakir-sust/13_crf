@@ -20,6 +20,7 @@ Our learning objectives are to:
 - What is a supervised and unsupervised model? 
 - Name some supervised and unsupervised models?
 - Bias-variance trade-off plot
+- What does last fit mean? 
 
 # Introduction  
 As we previously learned, linear regression models can suffer from **multicollinearity** when two or more predictor variables are highly correlated.  
