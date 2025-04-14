@@ -53,8 +53,8 @@ The power of random forests come from **two random processes**:
 
 The power of random forests come from these two random processes working together:
 
-- Random selection of rows with bootstrap aggregating (bagging) 
-- Random selection of columns at each split of the tree
+- Random selection of rows with bootstrap aggregating (bagging) [random bootstrap sample of the rows for each tree]
+- Random selection of columns at each split of the tree [random subset of columns for each split in each tree]
 
 So, in the end when you ask for a prediction from this forest, each tree is giving a prediction. And maybe if you were to look at just one of those trees, it would be a horrible prediction. But because you have so many trees, and they were all trained on a different version of our data, they make a really good prediction on average. That's the power of random forest and that's how it works so well. 
 ]
@@ -92,7 +92,8 @@ There will be 3 main hyperparameters that we can fine-tune:
 The number of trees needs to be sufficiently large to stabilize the error rate. 
 A good rule of thumb is to start with 10 times the number of features [features = variables/ columns].   
 
-[Normally what we want is a forest that has enough trees that stabilize the Out-of-bag (OOB) error.
+[Note:
+Normally what we want is a forest that has enough trees that stabilize the Out-of-bag (OOB) error.
 
 OOB Error = Out-of-bag error
 
@@ -120,7 +121,7 @@ When there are **fewer relevant predictors** (e.g., noisy data) a **higher value
 
 When there are many relevant predictors, a lower mtry might perform better.
 
-[
+[Note:
  mtry makes sure that each split of each tree is seeing a different subset of variables, and therefore creating variability in the trees you're creating. if you were to give always the same exact set of rows and columns to all 1000 trees, you would probably have a thousand trees that are very similar because they're all being trained on the same data, they all are seeing the same data. 
 
 Random forest is giving a a different subset of rows to the tree, and within that tree a different subset of columns that it splits, making that tree be very different from its neighboring tree or any other tree in that forest. 
@@ -158,11 +159,13 @@ But now once it makes a break, it splits again -- now those two splits, each one
 
 [Up to this point, we're talking about mtry (= the number of features each split in each tree is allowed to see). mtry does NOT determine how many breaks the tree can have. The hyperparameter that controls how deep a tree is going to be is the "node size".]
 
-Node size refers to the minimum number of observations in a node (of a given tree) for it to be split.  
+Node size refers to the minimum number of observations in a node (of a given tree) for it to be split.
+
+[Smaller minimum node sizes will allow deeper tree formation ]
 
 Larger values of node size grow simpler individual trees, while smaller values of node size grow longer more complex trees.  
 
-If computation time is a concern then you can often decrease run time substantially by increasing the node size and have only marginal impacts to your error estimate.  
+If *computation time is a concern*, then you can often *decrease run time* substantially by *increasing the node size* and *have only marginal impacts to your error estimate*.  
 
 ![](https://bradleyboehmke.github.io/HOML/09-random-forest_files/figure-html/tuning-node-size-1.png)
 
@@ -194,14 +197,14 @@ The prediction from all trees is aggregated (averaged if regression) and the ran
 ## Pros vs. cons of RF  
 Pros:  
   - Good performance even without tuning  [robust]
-  - Simple to train  
+  - Simple to train  [does not have a lot of hyperparameters]
   - It can model non-linear relationships  [because it is a tree]
   - Can be used with both numerical and categorical response variables  
-  - It handles NAs  
-  - Offers great balance of variance (by growing many trees) and bias (by averaging over them)  [most important pros]
+  - It handles NAs  [tree-based algorithms normally handle NAs pretty well]
+  - Offers great balance of variance (by growing many trees) and bias (by averaging over them)  [this is the most important advantage of random forest:  imagine that a single given tree (like we saw with CIT) can have high variance because if you change the data that you train it, it may change the model completely (not completely, but to some extent it's going to change the model). In random forest, individual trees have high variance, but because you create many trees, and then you average them, you decrease that variance when you take the average. And it also balances the bias because you're averaging over them. So, the many individual trees that we grow have high variance on their own.  But when you average over them, you reduce the variance, and have a better balance between variance and bias.]
   
 Cons:  
-  - Not as interpretable as previous models (there is no single tree model to look at)     
+  - Not as interpretable as previous models (because there is no single tree model to look at like CIT)     
   
     
 # Setup  
