@@ -55,7 +55,9 @@ The power of random forests come from **two random processes**:
 The power of random forests come from these two random processes working together:
 
 - Random selection of rows with bootstrap aggregating (bagging) [random bootstrap sample of the rows for each tree]
-- Random selection of columns at each split of the tree [random subset of columns for each split in each tree]
+- Random selection of a subset of predictor variables/ features/ columns at each split in each tree [random subset of columns for each split in each tree]
+
+Each tree is seeing a different version of our data, and each split in the tree is seeing a different set of predictor variables/features/columns.
 
 So, in the end when you ask for a prediction from this forest, each tree is giving a prediction. And maybe if you were to look at just one of those trees, it would be a horrible prediction. But because you have so many trees, and they were all trained on a different version of our data, they make a really good prediction on average. That's the power of random forest and that's how it works so well. 
 ]
@@ -68,19 +70,20 @@ Bagging then aggregates the predictions across all the trees; this aggregation r
 ## Random subset of features [at each split on each tree]  
 While growing a decision tree during the bagging process, random forests perform split-variable randomization where each time a split is to be performed, the search for the split variable is limited to a random subset of **mtry** of the original **p** features. 
 
-[Difference between CIT and random forest:
-With CIT we have only 1 tree, whereas with random forest we can have as many trees as we ask (that's why it's call "forest")
+[Note:
+Difference between CIT and random forest:
+With CIT we have only 1 tree, whereas with random forest we can have as many trees as we ask e.g., 1000 tress (that's why it's call "forest")
 ]
 
 Typical default values for mtry are **p/3** for regression (our case; when y/predicted variable is numerical) and $\sqrt p$ for classification (when y/predicted variable is categorical).  
 
-[mtry  = number of features that we allow for each split and each tree to see. 
+[*mtry  = number of features that we allow for each split and each tree to see.* 
 We have 73 number of features. So, p = 73. 
 So, the default mtry value will be = 73/3 = 24.3333. So, 24.3333 would be the number of columns that we randomly selected at each split of each tree.
 So, each split would see a random subset of 24 columns only (by default). If we just run the random forest and not train it, this would be the default random subset (of 24 columns) that it would use in our case. But this value is trainable, we can further improve our model by finding the best value of mtry. 
 ]
 
-Since the algorithm **randomly selects** a **bootstrap sample** to train on and a **random sample of features to use at each split**, a more diverse set of trees is produced which tends to lessen tree correlation beyond bagged trees and often dramatically increase predictive power.  
+Since the algorithm **randomly selects** a **bootstrap sample** [of rows] to train on and a **random sample of features to use at each split** [of each tree], a more diverse set of trees is produced which tends to lessen tree correlation beyond bagged trees and often dramatically increase predictive power.  
 
 So, how can we control the simplicity/complexity of the tree?  
 
