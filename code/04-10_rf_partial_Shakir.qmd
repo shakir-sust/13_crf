@@ -42,11 +42,11 @@ The methods we mentioned to overcome multicollinearity include:
 Today, we'll explore another model that addresses multicolinearity: **random forest**.  
 
 ## Random forest 
-Random forest is a very [robust] popular  **supervised** “out-of-the-box” or “off-the-shelf” learning algorithm that has good predictive performance with relatively little hyperparameter tuning.  
+Random forest is a very [robust] popular  **supervised** “out-of-the-box” or “off-the-shelf” learning algorithm that has good predictive performance with relatively little hyperparameter tuning.  [meaning even if we do not conduct hyperparameter fine tuning, random forest is still going to be a very reliable option. However, we should always do hyperparameter fine tuning.]
 
 The power of random forests come from **two random processes**:  
   - Bootstrap aggregating (bagging) on rows  
-  - Random selection of a subset of variables (columns) at each split. [Random selection of a subset of predictor variables/columns at each split]  
+  - Random selection of a subset of predictor variables (i.e., columns) at each split. [Random selection of a subset of predictor variables/columns at each split]  
   
 [ Very important note: 
 
