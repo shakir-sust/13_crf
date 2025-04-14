@@ -243,7 +243,7 @@ set.seed(931735)
 # Setting split level  
 weather_split <- initial_split(weather, 
                                prop = .7,
-                               strata = strength_gtex)
+                               strata = strength_gtex) # strata = strength_gtex: to do stratified sampling based on strength_gtex to make sure the distribution of strength across training and testing are similar
 
 weather_split
 ```
@@ -301,6 +301,18 @@ Different model types require different processing steps.
 Let's check what steps are required for an elastic net model (linear_reg).
 We can search for that in this link: https://www.tmwr.org/pre-proc-table  
 
+
+[Note:
+From Table A.1 (https://www.tmwr.org/pre-proc-table), we see that imputation is a required data pre-processing step for rand_forest() [random forest] if NAs are present in the data set. In our case, there is not NAs in our data set, so imputation is not required in our case. 
+
+The needed preprocessing for these models depends on the implementation. Specifically:
+Theoretically, any tree-based model does not require imputation. However, many tree ensemble implementations require imputation.
+While tree-based boosting methods generally do not require the creation of dummy variables, models using the xgboost engine do.
+
+- Random forest = tree-based *bagging* method
+- xgboost = tree-based *boosting* method
+]
+
 > Differently from elastic net, variables do not need to be normalized in random forest, so we'll skip this step.   
 
 ```{r weather_recipe}
@@ -335,12 +347,12 @@ First, let's specify:
   - which **engine** we want to use  
   - which **mode** we want to use  
 
-> Elastic nets can only be run for a numerical response variable. [Conditional inference tree and] Random forests can be run with either numerical (regression) or categorical (classification) explanatory variable. Therefore, we have the need to specify the mode here.
+> Elastic nets can only be run for a numerical response variable. [Conditional inference tree and] Random forests can be run with either numerical (regression) or categorical (classification) explanatory variable. Therefore, we have the need to specify the mode here. [Note: We only need to specify "mode" for models that can run both regression and classification such as CIT and random forest. Elastic net cannot do a classification model type (it can only do regression model type), so we did not specify "mode" for elastic net.]
 
 Random forest **hyperparameters**:  
   - **trees**: number of trees in the forest    
   - **mtry**: number of random features sampled at each node split    
-    - **min_n**: minimum number of data points in a node that are required for the node to be split further  
+    - **min_n**: minimum number of data points in a node that are required for the node to be split further  [Important note: we are not gonna fine tune "min_n" in this exercise because of time constraint, but we should fine tune "min_n" to do random forest in our own data]
 
 Let's create a model specification that will **fine-tune** the first two for us.
 
@@ -349,18 +361,19 @@ A given model type can be fit with different engines (e.g., through different pa
 ```{r rf_spec}
 
 rf_spec <- 
-  # Specifying rf as our model type, asking to tune the hyperparameters
+  # Specifying random forest as our model type, asking to tune the hyperparameters
   rand_forest(trees = tune(),
-              mtry = tune()
+              mtry = tune() #both "trees" and "mtry" are model-type level hyperparameters
               ) %>%
     # Specify the engine (= package)
-    set_engine("ranger") %>%
+    set_engine("ranger") %>% #specifying "ranger" as the engine/package to run random forest 
     # Specifying mode  
-    set_mode("regression")
+    set_mode("regression") #random forest can handle both regression (when y is numerical) and classification (when y is categorical) #Here, we are specifying "set_mode("regression")" because our y variable is numerical
 
 rf_spec
 
 ```
+Ask Dr. Bastos: For fine tuning "min_n", do we need to fine tune it at the model-type level [i.e., inside  rand_forest()], or do we need to fine tune it at the set_engine level?
 
 Notice how the main arguments above do not have a value **yet**, because they will be tuned.  
 
@@ -370,9 +383,9 @@ For our iterative search, we need:
   - The recipe (`weather_recipe`)  
   - Our **resampling strategy** (don't have yet)  
 
-> Notice that for rf we do not need to specify the parameter information, as we needed for CIT. The reason is that for rf, all hyperparameters to be tuned are specified at the model level, whereas for CIT one was at model level and one was at the engine level. Engine level hyperparameters need to be "finalized" and have their range of values set up before they can be used in search methods.  
+> Notice that for rf we do not need to specify the parameter information, as we needed for CIT. The reason is that for rf, all hyperparameters to be tuned are specified at the model level, whereas for CIT one was at model level ["tree_depth" was fine-tuned inside decision_tree() as:  decision_tree(tree_depth = tune()) ] and one was at the engine level ["conditional_min_criterion" was fine tuned inside set_engine() as: set_engine("partykit", conditional_min_criterion = tune())]. Engine level hyperparameters need to be "finalized" and have their range of values set up before they can be used in search methods.  
 
-> We used 10-fold CV before. It took about 10-min to run the grid on my side, so to avoid a long wait time in class, let's switch to 5-fold CV this time around.
+> We used 10-fold CV before. It took about 10-min to run the grid on my side, so to avoid a long wait time in class, let's switch to 5-fold CV this time around. But we always need to do at least 10 folds of our data.
 
 Let's define our resampling strategy below, using a 5-fold cross validation approach:  
 ```{r resampling_foldcv}
@@ -385,6 +398,8 @@ resampling_foldcv$splits[[1]]
 resampling_foldcv$splits[[2]]
 ```
 On each fold, we'll use **389** observations for training and **98** observations to assess performance.    
+
+[On each fold, we have 80% of the data on training, and 20% on assessment.]
 
 Now, let's perform the search below.  
 
@@ -410,10 +425,10 @@ rf_grid_result <- tune_sim_anneal(object = rf_spec,
                      preprocessor = weather_recipe,
                      resamples = resampling_foldcv,
                     #param_info = rf_param,
-                    iter = 10 #we are using "iter = 10" because of time constraint in class #but at least 100 is recommended
+                    iter = 10 #we are using "iter = 10" because of time constraint in class #but at least 100 is recommended #"iter = 10" also means that the iteration is gonna run 10 times to find the best #If we specified "iter = 100", the iteration would run 100 times to find the best, running 100 iteration is the best practice
                      )
 
-beepr::beep()
+beepr::beep() #plays a bell sound when the code chunk finishes running #this comes in handy for a code chunk that takes a long time to run, because the bell sound indicates the code chunk has finished running
 
 rf_grid_result
 rf_grid_result$.metrics[[2]]
@@ -439,7 +454,12 @@ rf_grid_result %>%
   labs(title = "RMSE")
 ```
 
-What tree_depth and min criterion values created lowest RMSE?  
+We want to minimize the RMSE. The lower the RMSE, the better. In the legend section of the RMSE grid plot seen above, the lowest RMSE is"2.85" which has a dark purple color, and we see the dark purple colored dot is on 4 th iteration, which indicates that the lowest RMSE [= "2.85"] was obtained in the 4 th iteration.
+
+
+What tree_depth and mtry values created lowest RMSE?  
+
+tree_depth = ~ 110; mtry = ~ 22 [when we have 10 iterations]
 
 Now, let's look into R2 (higher is better):  
 
@@ -458,6 +478,14 @@ rf_grid_result %>%
   labs(title = "R2")
 
 ```
+
+We want to see higher R2 (R2: higher is better).
+
+We want to see a maximized R2. The higher the R2, the better. In the legend section of the R2 grid plot seen above, the highest R2 is "0.16" which has a yellow color, and we see the yellow colored dot is on 4 th iteration, which indicates that the highest R2 [= "0.16"] was obtained in the 4 th iteration.
+
+What tree_depth and min criterion values created highest R2?  
+
+tree_depth = ~110; mtry = ~ 22 [this was the best result for 10 iterations]
 
 > Previously, we selected the single best model. Now, let's select the best model within one std error of the metric, so we choose a model among the top ones that is more parsimonious.  
 
