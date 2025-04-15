@@ -165,18 +165,18 @@ But now once it makes a break, it splits again -- now those two splits, each one
 
 [Up to this point, we're talking about mtry (= the number of features each split in each tree is allowed to see). mtry does NOT determine how many breaks the tree can have. The hyperparameter that controls how deep a tree is going to be is the "node size".]
 
-Node size refers to the minimum number of observations in a node (of a given tree) for it to be split.
+*Node size refers to the minimum number of observations in a node (of a given tree) for it to be split.*
 
 [Smaller minimum node sizes will allow deeper tree formation ]
 
-Larger values of node size grow simpler individual trees, while smaller values of node size grow longer more complex trees.  
+*Larger values of node size grow simpler individual trees, while smaller values of node size grow longer more complex trees.*  
 
 If *computation time is a concern*, then you can often *decrease run time* substantially by *increasing the node size* and *have only marginal impacts to your error estimate*.  
 
 ![](https://bradleyboehmke.github.io/HOML/09-random-forest_files/figure-html/tuning-node-size-1.png)
 
 ## Growing an individual tree  
-Random forest is a collection of many individual trees.  
+Random forest is a collection of many individual trees. [that's why we call it a forest] 
 
 Each individual tree will grow based on node size, the bootstrapped sample, and evaluating a given number of random columns at each split.  
 
@@ -195,18 +195,18 @@ Each individual tree is made up from:
   - a bootstrapped sample of the rows  
   - at each split, a random sample of the columns  
 
-Then the forest grows by growing many individual trees.  
+Then the forest grows by growing many individual trees. [and combining all of them into 1 algorithm] 
 When predicting, each tree makes its own prediction.  
 
 The prediction from all trees is aggregated (averaged if regression) and the random forest provides one single predicted value.  
 
 ## Pros vs. cons of RF  
 Pros:  
-  - Good performance even without tuning  [robust]
+  - Good performance even without tuning  [very robust because of the 2 random processes]
   - Simple to train  [does not have a lot of hyperparameters]
   - It can model non-linear relationships  [because it is a tree]
   - Can be used with both numerical and categorical response variables  
-  - It handles NAs  [tree-based algorithms normally handle NAs pretty well]
+  - It handles NAs  [some algorithms do not handle NAs at all, we have to impute the NAs. But, tree-based algorithms like random forest normally handle NAs pretty well]
   - Offers great balance of variance (by growing many trees) and bias (by averaging over them)  [this is the most important advantage of random forest:  imagine that a single given tree (like we saw with CIT) can have high variance because if you change the data that you train it, it may change the model completely (not completely, but to some extent it's going to change the model). In random forest, individual trees have high variance, but because you create many trees, and then you average them, you decrease that variance when you take the average. And it also balances the bias because you're averaging over them. So, the many individual trees that we grow have high variance on their own.  But when you average over them, you reduce the variance, and have a better balance between variance and bias.]
   
 Cons:  
