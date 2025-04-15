@@ -311,9 +311,11 @@ We can search for that in this link: https://www.tmwr.org/pre-proc-table
 [Note:
 From Table A.1 (https://www.tmwr.org/pre-proc-table), we see that imputation is a required data pre-processing step for rand_forest() [random forest] if NAs are present in the data set. In our case, there is not NAs in our data set, so imputation is not required in our case. 
 
-The needed preprocessing for these models depends on the implementation. Specifically:
-Theoretically, any tree-based model does not require imputation. However, many tree ensemble implementations require imputation.
-While tree-based boosting methods generally do not require the creation of dummy variables, models using the xgboost engine do.
+The needed preprocessing for these models depends on the implementation. Specifically:  
+
+  - Theoretically, any tree-based model does not require imputation. However, many tree ensemble implementations (like random forest) require imputation.  
+  
+  - While tree-based boosting methods generally do not require the creation of dummy variables, models using the xgboost engine do. ["random forest" is a tree-based bagging method]   
 
 - Random forest = tree-based *bagging* method
 - xgboost = tree-based *boosting* method
@@ -334,7 +336,7 @@ weather_recipe <-
 weather_recipe
 ```
 
-Now that we have our recipe ready, we **need to apply it** to the training data in a process called prepping:
+Now that we have our recipe ready, we **need to apply it** to the training data in a process called prepping: [Note: To apply recipe to the training data, we use prep() function]
 
 ```{r weather_prep}
 weather_prep <- weather_recipe %>%
@@ -357,7 +359,7 @@ First, let's specify:
 
 Random forest **hyperparameters**:  
   - **trees**: number of trees in the forest    
-  - **mtry**: number of random features sampled at each node split    
+  - **mtry**: number of random features [or columns] sampled at each node split    
     - **min_n**: minimum number of data points in a node that are required for the node to be split further  [Important note: we are not gonna fine tune "min_n" in this exercise because of time constraint, but we should fine tune "min_n" to do random forest in our own data]
 
 Let's create a model specification that will **fine-tune** the first two for us.
@@ -369,12 +371,12 @@ A given model type can be fit with different engines (e.g., through different pa
 rf_spec <- 
   # Specifying random forest as our model type, asking to tune the hyperparameters
   rand_forest(trees = tune(),
-              mtry = tune() #both "trees" and "mtry" are model-type level hyperparameters
+              mtry = tune() #both "trees" and "mtry" are model-type level hyperparameters, meaning that we fine tune "trees" and "mtry" inside "rand_forest()"
               ) %>%
     # Specify the engine (= package)
     set_engine("ranger") %>% #specifying "ranger" as the engine/package to run random forest 
     # Specifying mode  
-    set_mode("regression") #random forest can handle both regression (when y is numerical) and classification (when y is categorical) #Here, we are specifying "set_mode("regression")" because our y variable is numerical
+    set_mode("regression") #random forest can handle both regression (when y is numerical) and classification (when y is categorical) #Here, we are specifying "set_mode("regression")" because our y variable is numerical [continuous]
 
 rf_spec
 
@@ -387,9 +389,12 @@ Notice how the main arguments above do not have a value **yet**, because they wi
 For our iterative search, we need:  
   - Our model specification (`rf_spec`)  
   - The recipe (`weather_recipe`)  
-  - Our **resampling strategy** (don't have yet)  
+  - Our **resampling strategy** (don't have yet) 
+  
 
-> Notice that for rf we do not need to specify the parameter information, as we needed for CIT. The reason is that for rf, all hyperparameters to be tuned are specified at the model level, whereas for CIT one was at model level ["tree_depth" was fine-tuned inside decision_tree() as:  decision_tree(tree_depth = tune()) ] and one was at the engine level ["conditional_min_criterion" was fine tuned inside set_engine() as: set_engine("partykit", conditional_min_criterion = tune())]. Engine level hyperparameters need to be "finalized" and have their range of values set up before they can be used in search methods.  
+> Notice that for "random forest", we do not need to specify the parameter information, as we needed for CIT. The reason is that for random forest, all hyperparameters to be tuned are specified at the model level, whereas for CIT: one hyperparameter was at model level ["tree_depth" was fine-tuned inside decision_tree() as:  decision_tree(tree_depth = tune()) ] and another hyperparameter was at the engine level ["conditional_min_criterion" was fine tuned inside set_engine() as: set_engine("partykit", conditional_min_criterion = tune())]. Engine level hyperparameters need to be "finalized" and have their range of values set up before they can be used in search methods.  
+
+[Note: CIT had one hyperparameter at the level of the model, and another hyperparameter at the level of the engine. Because of that, we had to do 1 extra step for the hyperparameter at the level of the engine to set the levels that would be searched in the grid. In random forest, both of the hyperparameters are fine tuned at the level of the model i.e., inside "rand_forest( trees = tune(), mtry = tune() )", and we don't have any hyperparameter at the engine level. Therefore, we can skip one of the steps here in random forest that were required for CIT.] 
 
 > We used 10-fold CV before. It took about 10-min to run the grid on my side, so to avoid a long wait time in class, let's switch to 5-fold CV this time around. But we always need to do at least 10 folds of our data.
 
@@ -493,14 +498,14 @@ What tree_depth and min criterion values created highest R2?
 
 tree_depth = ~110; mtry = ~ 22 [this was the best result for 10 iterations]
 
-> Previously, we selected the single best model. Now, let's select the best model within one percent loss of the metric, so we choose a model among the top ones that is more parsimonious.  
+> Previously, we selected the single best model. Now, let's select the best model by "percent loss" of the metric, so we choose a model among the top ones that is more parsimonious.  
 
 ```{r}
 # Based on lowest RMSE
 best_rmse <- rf_grid_result %>%
   select_by_pct_loss("trees",
                      metric = "rmse",
-                     limit = 2 #"limit = 2": this is how many percent losses you are excepting in this case
+                     limit = 2 #"limit = 2": this is how many percent losses you are accepting, 2% in this case
                      )
 
 best_rmse
@@ -526,6 +531,7 @@ best_r2
 ```
 
 I got the he following results that were different than Dr. Bastos's results (because of the randomness of 2 hyperparameters going on at each tree for a lot of models):
+
 Based on RMSE, we would choose   
   - mtry = 25 
   - trees = 443
@@ -536,6 +542,7 @@ Based on R2, we would choose
 
 
 However, Dr. Bastos got the following results:
+
 Based on RMSE, we would choose   
   - mtry = 24 
   - trees = 518
@@ -551,7 +558,7 @@ final_spec <- rand_forest(trees = best_r2$trees,
                           mtry = best_r2$mtry) %>%
   # Specify the engine
   set_engine("ranger",
-             importance = "permutation"
+             importance = "permutation" #"permutation" is how we look into variable importance in random forest
              ) %>%
     # Specifying mode  
   set_mode("regression")
@@ -634,7 +641,7 @@ Fit metrics on the train set:
 rmse = 1.1385078	
 rsq	= 0.9470296	
 
-We see that the R2 is really r-e-a-l-l-y high in the train set (rsq	= 0.9470296), as compared to the R2 of the test set 0.1882245. The RMSE is lower in the train set (rmse = 1.1385078) as compared to the RMSE of the test set (rmse = 2.9317445). [This is the reason why it's okay to report the fit metrics of the train set to understand how well our model is explaining our data, but it is not a good measure of the predictive ability of the model. To understand the predictive ability of the model, we have to look at the fit metrics of the test set. Notice that the R2 of the test set was 0.1882245, whereas the R2 of the train set was 0.9470296 -- which is a very large difference. Hence, we need to always report the fit metrics of the test set along with the fit metrics of the train set. ]
+We see that the R2 is really r-e-a-l-l-y high in the train set (rsq	= 0.9470296), as compared to the R2 of the test set 0.1882245. The RMSE is lower in the train set (rmse = 1.1385078) as compared to the RMSE of the test set (rmse = 2.9317445). [This is the reason why it's okay to report the fit metrics of the train set to understand how well our model is explaining our data, but it is not a good measure of the predictive ability of the model. To understand the predictive ability of the model, we have to look at the fit metrics of the test set. Notice that the R2 of the test set was 0.1882245, whereas the R2 of the train set was 0.9470296 -- which is a very large difference. Hence, *we need to always report the fit metrics of the test set* along with the fit metrics of the train set. ]
 
 Predicted vs. observed plot:  
 ```{r}
@@ -653,11 +660,11 @@ final_fit %>%
 To interpret random forest model, we should always expcet to see (1) *perdicted vs. observed plot* and (3) *variable importance plot*, at the least -- these are the 2 things that must be mentioned in a random forest model. 
 ]
 
-Variable importance: 
+*Variable importance:* 
 
 [For Random Forest,] The importance metric we are evaluating here is **permutation**. 
 
-In the permutation-based approach, for each tree, the out-of-bag sample is passed down the tree and the prediction accuracy is recorded.   
+In the permutation-based approach, for each tree, the out-of-bag sample is passed down the tree and the prediction accuracy is recorded. [as is]   
 
 Then the values for each variable (one at a time) are randomly permuted and the accuracy is again computed.   
 
@@ -685,8 +692,15 @@ final_spec %>%
 
 **Therefore, solar radiation in July, the minimum temperature in June  [Dr. Bastos found solar radiation in August to be the 2nd most important variable], and solar radiation in "August" [Dr. Bastos found minimum temperature in June to be the 3rd most important variable] were the most important variables affecting cotton fiber strength.**  
 
-[**Very important note:**
-To interpret random forest model, we should always expcet to see (1) *perdicted vs. observed plot* and (3) *variable importance plot*, at the least -- these are the 2 things that must be mentioned in a random forest model. 
+[Note:
+
+*Difference in the variable importance plot between CIT and random forest:*
+
+In random forest, all predictor variables are gonna have certain level of importance in contrast to CIT. That is why we see all predictors variables appearing in the variable importance plot of random forest (as seen above).
+
+However, in CIT, the only important variables are the ones that appeared in the single tree. That's why only 3 predictor variables showed up in the variable importance plot of CIT.
+
+But in random forest, we have about 500 trees, and each one of these trees have different predictor variables. So, when each of these predictor variables are shuffled, it's assessing which variables after shuffling reduce the model accuracy significantly. 
 ]
 
 # Summary  
@@ -697,8 +711,14 @@ In this exercise, we covered:
   - Used `rsamples` to split data  
   - Used **iterative search** to find the best values for max_depth and mtry   
   - Used 5-fold cross validation as the resampling method  
-  - Used both R2 and RMSE as the metrics to select best model  (within one percent loss)
+  - Used both R2 and RMSE as the metrics to select best model  (within 2 percent loss)
   - Once final model was determined, used it to predict **test set**  
-  - Evaluated it with predicted vs. observed plot, R2 and RMSE metrics, variable importance, and tree plot    
+  - Evaluated it with predicted vs. observed plot, R2 and RMSE metrics, variable importance plot, and tree plot
+  
+[**Very important note:**
+In random forest, we do not have a single tree (which was the case in CIT), but about 500 trees in this case.
+
+So, in order to interpret random forest models, we should always expcet to see (1) *perdicted vs. observed plot* and (2) *variable importance plot*, at the least -- these are the 2 things that must be mentioned in a random forest model. 
+]
 
 
