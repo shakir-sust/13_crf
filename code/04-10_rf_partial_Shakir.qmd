@@ -589,6 +589,7 @@ final_fit %>%
 ```
 
 Metrics on the **test set**:
+
 ```{r}
 final_fit %>%
   collect_metrics()
